@@ -121,18 +121,22 @@ Keep up the great work!
 
 * Create a Notion database called **Accountability Logs** with properties:
 
-  * Title (Name)
-  * User Name (Rich Text)
+  * Title (Title)
+  * User (Rich Text)
   * Goal (Rich Text)
-  * AI Message (Rich Text)
-  * Completion Date (Date)
+  * Message (Rich Text)
+  * Timestamp (Date)
 * Map fields:
 
   * Title → `{{trigger.course_title}} – {{trigger.user_name}}`
-  * User Name → `{{trigger.user_name}}`
+  * User → `{{trigger.user_name}}`
   * Goal → `{{trigger.goal_text}}`
-  * AI Message → `{{steps.code_parse_gemini.gemini_output}}`
-  * Completion Date → `{{trigger.completed_at}}` (or `{{zap_meta_human_now}}`)
+  * Message → `{{steps.code_parse_gemini.gemini_output}}`
+  * Timestamp → `{{trigger.completed_at}}` (or `{{zap_meta_human_now}}`)
+
+#### Notion setup reference
+
+For a step-by-step walkthrough of creating the database schema, capturing the `NOTION_DATABASE_ID`, and testing mappings, see [docs/notion_setup.md](docs/notion_setup.md).
 
 ### 6) (Optional) Daily/Weekly follow-ups
 

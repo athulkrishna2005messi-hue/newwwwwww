@@ -1,0 +1,31 @@
+{
+  "parent": {
+    "type": "page_id",
+    "page_id": "YOUR_NOTION_PAGE_ID"
+  },
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "Accountability Logs"
+      }
+    }
+  ],
+  "properties": {
+    "Title": {
+      "title": {}
+    },
+    "User": {
+      "rich_text": {}
+    },
+    "Goal": {
+      "rich_text": {}
+    },
+    "Message": {
+      "rich_text": {}
+    },
+    "Timestamp": {
+      "date": {}
+    }
+  }
+}
