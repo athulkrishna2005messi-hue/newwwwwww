@@ -1,0 +1,62 @@
+{
+  "project": {
+    "name": "whop-intake-onboarding",
+    "description": "Buyer intake flow using Google Forms + Zapier to configure AI coach and onboard in Whop/Notion."
+  },
+  "form": {
+    "platform": "Google Forms",
+    "url_placeholder": "<add_live_form_url_here>",
+    "fields": [
+      {"key": "name", "label": "Buyer’s full name", "type": "short_text", "required": true},
+      {"key": "email", "label": "Whop purchase email", "type": "email", "required": true},
+      {"key": "notion_workspace_link", "label": "Notion workspace link", "type": "url", "required": true},
+      {"key": "goal_category", "label": "Primary goal or focus area", "type": "dropdown", "options": ["Fitness", "Learning", "Productivity", "Career", "Custom"], "required": true},
+      {"key": "frequency", "label": "Preferred update frequency", "type": "dropdown", "options": ["daily", "weekly", "custom"], "required": true},
+      {"key": "notes", "label": "Optional notes", "type": "long_text", "required": false}
+    ]
+  },
+  "zap": {
+    "name": "Buyer Intake → AI Coach Setup + Onboarding",
+    "trigger": { "app": "Google Sheets", "event": "New Spreadsheet Row", "from": "Google Forms" },
+    "steps": [
+      {"id": "format_inputs", "app": "Formatter by Zapier", "event": "Utilities", "notes": "Normalize email/frequency"},
+      {"id": "webhook_gemini_coach", "app": "Webhooks by Zapier", "event": "Custom Request", "method": "POST", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent", "query_params": {"key": "{{secrets.GOOGLE_GEMINI_API_KEY}}"}, "headers": {"Content-Type": "application/json"}, "body": {"generationConfig": {"temperature": 0.7, "topP": 0.9, "topK": 40, "maxOutputTokens": 400}, "contents": [{"parts": [{"text": "Create a concise AI coach setup brief for a new buyer. Fields: Name={{steps.1.name}}, Email={{steps.1.email}}, Goal Category={{steps.1.goal_category}}, Preferred Frequency={{steps.1.frequency}}, Notes='{{steps.1.notes}}'. Output 3 sections: (1) Welcome message (≤80 words) (2) Coaching focus checklist (3) 7-day cadence suggestion aligned to frequency. Avoid emojis."}]}]}},
+      {"id": "code_parse_gemini_coach", "app": "Code by Zapier", "event": "Run JavaScript", "input": {"response": "{{steps.webhook_gemini_coach.body}}"}, "code": "const parsed = typeof inputData.response === 'string' ? JSON.parse(inputData.response) : inputData.response;\nconst text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || parsed?.candidates?.[0]?.output_text || '';\nreturn { coach_plan: text.trim() };"},
+      {"id": "notion_create_internal_record", "app": "Notion", "event": "Create Database Item", "fields": {"database_id": "{{secrets.NOTION_BUYERS_DB_ID}}", "properties": {"Title": {"title": [{"text": {"content": "{{steps.1.name}} ({{steps.1.email}})"}}]}, "Workspace Link": {"url": "{{steps.1.notion_workspace_link}}"}, "Goal Category": {"select": {"name": "{{steps.1.goal_category}}"}}, "Frequency": {"select": {"name": "{{steps.1.frequency}}"}}, "Notes": {"rich_text": [{"text": {"content": "{{steps.1.notes}}"}}]}, "Coach Plan": {"rich_text": [{"text": {"content": "{{steps.code_parse_gemini_coach.coach_plan}}"}}]}, "Status": {"select": {"name": "In Progress"}}}}},
+      {"id": "notion_buyer_workspace_page", "app": "Notion", "event": "Create Page", "enabled": false, "fields": {"parent": "{{secrets.NOTION_BUYER_SHARED_PARENT_ID}}", "title": "{{steps.1.name}} – AI Coach Plan", "content": "{{steps.code_parse_gemini_coach.coach_plan}}"}},
+      {"id": "slack_notify", "app": "Slack", "event": "Send Channel Message", "enabled": false, "fields": {"channel": "#onboarding", "text": "New buyer onboarded: {{steps.1.name}} ({{steps.1.email}}) — Goal={{steps.1.goal_category}}, Frequency={{steps.1.frequency}}. Notion record: {{steps.notion_create_internal_record.url}}"}},
+      {"id": "lookup_whop_user", "app": "Webhooks by Zapier", "event": "GET", "enabled": true, "url": "https://api.whop.com/v2/users", "params": {"email": "{{steps.1.email}}"}, "headers": {"Authorization": "Bearer {{secrets.WHOP_API_KEY}}"}},
+      {"id": "whop_update_metadata", "app": "Webhooks by Zapier", "event": "Custom Request", "method": "PATCH", "url": "https://api.whop.com/v2/users/{{steps.lookup_whop_user.data[0].id}}/metadata", "headers": {"Authorization": "Bearer {{secrets.WHOP_API_KEY}}", "Content-Type": "application/json"}, "body": {"onboarded": true, "goal_category": "{{steps.1.goal_category}}", "frequency": "{{steps.1.frequency}}"}},
+      {"id": "paths_frequency", "type": "group", "label": "Follow-up Scheduling", "enabled": false, "steps": [
+        {"id": "path_daily", "app": "Filter by Zapier", "event": "Only continue if", "fields": {"frequency": "daily"}},
+        {"id": "delay_daily", "app": "Delay by Zapier", "event": "Delay For", "fields": {"for": "1 day"}},
+        {"id": "whop_followup_daily", "app": "Whop", "event": "Send Chat Message", "fields": {"channel_id": "{{steps.lookup_whop_user.data[0].chat_channel_id}}", "message": "Daily check-in for {{steps.1.name}} — how’s progress on your {{steps.1.goal_category}} goal? Try a 15-minute focused session today."}}
+      ]}
+    ]
+  },
+  "security": {
+    "secrets": ["GOOGLE_GEMINI_API_KEY", "NOTION_API_KEY", "WHOP_API_KEY", "NOTION_BUYERS_DB_ID", "NOTION_BUYER_SHARED_PARENT_ID"],
+    "notes": [
+      "Store keys in Zapier app connections or secret fields; never hardcode.",
+      "For writing to buyer’s Notion workspace, the buyer must share a page/database with your integration.",
+      "Limit scopes and avoid logging PII in Code by Zapier logs."
+    ]
+  },
+  "testing": {
+    "checklist": [
+      "Submit the form with sample data (use a test email).",
+      "Verify Gemini returns a coach plan and parser extracts coach_plan.",
+      "Confirm Notion record created in internal Buyers DB with correct fields.",
+      "If enabled, Slack/Email notification is received.",
+      "Whop metadata updated for the user (verify via API or dashboard)."
+    ]
+  },
+  "alternatives": {
+    "trigger": {
+      "platform": "Notion",
+      "description": "Use a Notion Form or Inbox Database to collect responses instead of Google Forms.",
+      "event": "New Database Item",
+      "mapping_notes": "Map database properties to the same Zap input fields so downstream steps remain unchanged."
+    }
+  }
+}
