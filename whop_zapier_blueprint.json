@@ -1,0 +1,161 @@
+{
+  "project": {
+    "name": "whop-zapier-gemini-integration",
+    "description": "A no-code automation that connects Whop, Zapier, and Gemini 1.5 Pro. When a Whop user completes a lesson or submits a goal, Gemini generates a short motivational message which is sent back via Whop chat. Optionally logs to Notion and schedules daily/weekly follow-ups."
+  },
+  "zap": {
+    "name": "Whop × Gemini AI Accountability Partner",
+    "apps": [
+      "Whop",
+      "Webhooks by Zapier",
+      "Code by Zapier",
+      "Notion",
+      "Delay by Zapier",
+      "Looping by Zapier"
+    ],
+    "trigger": {
+      "app": "Whop",
+      "event": "Lesson Completed (or Form Submitted)",
+      "sample": {
+        "user_name": "Jane Doe",
+        "course_title": "Pricing Strategy 101",
+        "goal_text": "Ship MVP by Friday",
+        "user_id": "whop_user_123",
+        "chat_channel_id": "whop_chat_abc",
+        "completed_at": "2025-10-27T12:34:56Z"
+      }
+    },
+    "steps": [
+      {
+        "id": "webhook_gemini",
+        "type": "action",
+        "app": "Webhooks by Zapier",
+        "event": "Custom Request",
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+        "query_params": { "key": "{{secrets.GOOGLE_GEMINI_API_KEY}}" },
+        "headers": { "Content-Type": "application/json" },
+        "body": {
+          "generationConfig": {
+            "temperature": 0.7,
+            "topP": 0.9,
+            "topK": 40,
+            "maxOutputTokens": 200
+          },
+          "contents": [
+            {
+              "parts": [
+                {
+                  "text": "Write a friendly, encouraging 3-sentence message for {{steps.1.user_name}} who just finished {{steps.1.course_title}} or set this goal: '{{steps.1.goal_text}}'. Include one short actionable tip. Keep it under 80 words. Avoid emojis."
+                }
+              ]
+            }
+          ]
+        },
+        "send_as_json": true,
+        "output_mapping": { "response": "{{steps.webhook_gemini.raw_body}}" }
+      },
+      {
+        "id": "code_parse_gemini",
+        "type": "action",
+        "app": "Code by Zapier",
+        "event": "Run JavaScript",
+        "input": { "response": "{{steps.webhook_gemini.body}}" },
+        "code": "const parsed = typeof inputData.response === 'string' ? JSON.parse(inputData.response) : inputData.response;\nconst msg = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || parsed?.candidates?.[0]?.output_text || '';\nreturn { gemini_output: msg.trim() };",
+        "output_mapping": { "gemini_output": "{{steps.code_parse_gemini.gemini_output}}" }
+      },
+      {
+        "id": "whop_send_message",
+        "type": "action",
+        "app": "Whop",
+        "event": "Send Chat Message",
+        "fields": {
+          "channel_id": "{{trigger.chat_channel_id}}",
+          "recipient_user_id": "{{trigger.user_id}}",
+          "message": "Hey {{trigger.user_name}}, your AI Accountability Partner says:\n{{steps.code_parse_gemini.gemini_output}}\nKeep up the great work!"
+        }
+      },
+      {
+        "id": "notion_log",
+        "type": "action",
+        "app": "Notion",
+        "event": "Create Database Item",
+        "enabled": false,
+        "fields": {
+          "database_id": "{{secrets.NOTION_DATABASE_ID}}",
+          "properties": {
+            "Title": { "title": [ { "text": { "content": "{{trigger.course_title}} – {{trigger.user_name}}" } } ] },
+            "User": { "rich_text": [ { "text": { "content": "{{trigger.user_name}}" } } ] },
+            "Goal": { "rich_text": [ { "text": { "content": "{{trigger.goal_text}}" } } ] },
+            "Message": { "rich_text": [ { "text": { "content": "{{steps.code_parse_gemini.gemini_output}}" } } ] },
+            "Timestamp": { "date": { "start": "{{zap_meta_human_now}}" } }
+          }
+        }
+      },
+      {
+        "id": "followups_loop",
+        "type": "group",
+        "label": "Optional Follow-ups",
+        "enabled": false,
+        "steps": [
+          {
+            "id": "loop_create",
+            "app": "Looping by Zapier",
+            "event": "Create Loop From Numbers",
+            "fields": { "from": 1, "to": 5 }
+          },
+          {
+            "id": "delay_step",
+            "app": "Delay by Zapier",
+            "event": "Delay For",
+            "fields": { "for": "1 day" }
+          },
+          {
+            "id": "webhook_gemini_followup",
+            "app": "Webhooks by Zapier",
+            "event": "Custom Request",
+            "method": "POST",
+            "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+            "query_params": { "key": "{{secrets.GOOGLE_GEMINI_API_KEY}}" },
+            "headers": { "Content-Type": "application/json" },
+            "body": {
+              "generationConfig": { "temperature": 0.7, "topP": 0.9, "topK": 40, "maxOutputTokens": 200 },
+              "contents": [ { "parts": [ { "text": "Write a short friendly check-in for {{trigger.user_name}} on their goal: '{{trigger.goal_text}}'. Offer one micro-action they can do today. Keep it under 50 words. Avoid emojis." } ] } ]
+            }
+          },
+          {
+            "id": "code_parse_followup",
+            "app": "Code by Zapier",
+            "event": "Run JavaScript",
+            "input": { "response": "{{steps.webhook_gemini_followup.body}}" },
+            "code": "const parsed = typeof inputData.response === 'string' ? JSON.parse(inputData.response) : inputData.response; const msg = parsed?.candidates?.[0]?.content?.parts?.[0]?.text || parsed?.candidates?.[0]?.output_text || ''; return { gemini_output: msg.trim() };"
+          },
+          {
+            "id": "whop_followup",
+            "app": "Whop",
+            "event": "Send Chat Message",
+            "fields": { "channel_id": "{{trigger.chat_channel_id}}", "message": "Checking in, {{trigger.user_name}} — how’s progress on: '{{trigger.goal_text}}'? One small step you can take today: set a 15-minute timer and tackle the first sub-task." }
+          }
+        ]
+      }
+    ]
+  },
+  "security": {
+    "secrets": [ "GOOGLE_GEMINI_API_KEY", "WHOP_API_KEY", "NOTION_API_KEY" ],
+    "notes": [
+      "Store keys in Zapier account connections or Zapier secret fields; do not hardcode.",
+      "Limit permission scopes where possible and rotate keys periodically.",
+      "Avoid logging PII or secrets in Code by Zapier logs; filter logs before sharing."
+    ]
+  },
+  "testing": {
+    "steps": [
+      "Trigger with sample Whop event (lesson complete or form submit).",
+      "Verify Gemini webhook returns HTTP 200 and response includes candidates[0].",
+      "Confirm Code step returns non-empty gemini_output and length < 80 words.",
+      "Confirm Whop chat message posts to the expected channel/user.",
+      "If enabled, confirm Notion item appears with correct fields.",
+      "If enabled, confirm follow-ups send on schedule."
+    ]
+  }
+}
