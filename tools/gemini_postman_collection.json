@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "Gemini Accountability Prompt",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection to exercise the Gemini 1.5 Pro generateContent endpoint using Whop sample data."
+  },
+  "item": [
+    {
+      "name": "Generate Accountability Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={{GOOGLE_GEMINI_API_KEY}}",
+          "protocol": "https",
+          "host": [
+            "generativelanguage",
+            "googleapis",
+            "com"
+          ],
+          "path": [
+            "v1beta",
+            "models",
+            "gemini-1.5-pro:generateContent"
+          ],
+          "query": [
+            {
+              "key": "key",
+              "value": "{{GOOGLE_GEMINI_API_KEY}}"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"topP\": 0.9,\n    \"topK\": 40,\n    \"maxOutputTokens\": 200\n  },\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Write a friendly, encouraging 3-sentence message for {{user_name}} who just finished {{course_title}} or set this goal: '{{goal_text}}'. Include one short actionable tip. Keep it under 80 words. Avoid emojis.\"\n        }\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "GOOGLE_GEMINI_API_KEY",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_name",
+      "value": "Jane Doe",
+      "type": "string"
+    },
+    {
+      "key": "course_title",
+      "value": "Pricing Strategy 101",
+      "type": "string"
+    },
+    {
+      "key": "goal_text",
+      "value": "Ship MVP by Friday",
+      "type": "string"
+    },
+    {
+      "key": "chat_channel_id",
+      "value": "whop_chat_abc",
+      "type": "string"
+    }
+  ]
+}
