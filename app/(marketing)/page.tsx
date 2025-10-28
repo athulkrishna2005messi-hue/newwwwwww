@@ -15,12 +15,12 @@ export default function MarketingPage() {
     <div className="flex min-h-screen flex-col bg-canvas">
       <Navigation />
 
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+      <main aria-labelledby="marketing-hero" className="flex flex-1 flex-col items-center justify-center px-6 py-16">
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
           <span className="rounded-full bg-brand-light/40 px-4 py-1 text-sm font-medium text-brand-dark">
             Ship better with every conversation
           </span>
-          <h1 className="mt-6 text-4xl font-heading font-semibold text-ink sm:text-5xl">
+          <h1 id="marketing-hero" className="mt-6 text-4xl font-heading font-semibold text-ink sm:text-5xl">
             Collect feedback, prioritize confidently, delight customers
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-subtle sm:text-xl">
@@ -30,13 +30,13 @@ export default function MarketingPage() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/app/dashboard"
-              className="rounded-full bg-brand px-6 py-3 text-base font-medium text-white transition hover:bg-brand-dark"
+              className="rounded-full bg-brand px-6 py-3 text-base font-medium text-white transition hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark"
             >
               View the dashboard
             </Link>
             <Link
               href="https://feedbackflow.io"
-              className="rounded-full border border-brand-dark px-6 py-3 text-base font-medium text-brand-dark transition hover:bg-brand-light/30"
+              className="rounded-full border border-brand-dark px-6 py-3 text-base font-medium text-brand-dark transition hover:bg-brand-light/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark"
             >
               Learn more
             </Link>
