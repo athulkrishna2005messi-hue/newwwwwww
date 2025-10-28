@@ -28,10 +28,10 @@ ENV/
 # Environment and secrets
 .env
 .env.*
+!.env.local.example
 *.env
 *.pem
 
 # IDE/editor directories
 .idea/
-.vscode/
 *.swp

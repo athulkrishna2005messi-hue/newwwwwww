@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-brand-primary: #6366f1;
+  --color-brand-accent: #a5b4fc;
+  --color-brand-dark: #312e81;
+  --color-canvas: #f8fafc;
+  --color-ink: #0f172a;
+  --color-subtle: #475569;
+
+  --font-heading: 'Inter';
+  --font-body: 'Inter';
+}
+
+html,
+body {
+  min-height: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  @apply antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  @apply font-semibold text-ink;
+}
