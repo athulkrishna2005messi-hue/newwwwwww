@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "functions": {
+    "app/api/**": {
+      "runtime": "edge",
+      "maxDuration": 15
+    }
+  },
+  "env": {
+    "HUGGINGFACE_API_KEY": "@huggingface_api_key",
+    "HUGGINGFACE_INFERENCE_BASE_URL": "@huggingface_inference_base_url",
+    "FIREBASE_API_KEY": "@firebase_api_key",
+    "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+    "FIREBASE_PROJECT_ID": "@firebase_project_id",
+    "FIREBASE_STORAGE_BUCKET": "@firebase_storage_bucket",
+    "FIREBASE_MESSAGING_SENDER_ID": "@firebase_messaging_sender_id",
+    "FIREBASE_APP_ID": "@firebase_app_id",
+    "WHOP_CHECKOUT_URL": "@whop_checkout_url",
+    "WHOP_API_TOKEN": "@whop_api_token"
+  }
+}
